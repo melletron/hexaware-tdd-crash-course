@@ -1,9 +1,12 @@
 import {expect} from "chai";
 
 import {localStorage} from "./mocks/local-storage.mock";
-import {KeychainService} from "./keychain.service";
+import {KeychainService, RSA_CONFIG} from "./keychain.service";
 
 const sinon = require("sinon");
+
+// String to ArrayBuffer
+const textEncoder = new TextEncoder();
 
 // We are having 2 stub keys as values we can use for our test
 // These are generated manually using the Crypto library
@@ -101,6 +104,52 @@ describe('KeyChain', () => {
         });
 
 
+    });
+
+    describe('decrypt', () => {
+        it('can decrypt messages that have been encrypted by its own public key', async () => {
+
+            //localStorage is a singleton, so let's make sure no keys are stored there
+            localStorage.removeItem('vault-public-key');
+            localStorage.removeItem('vault-private-key');
+
+            // We store our stub keys into local storage
+            localStorage.setItem('vault-public-key', STUB_PUBLIC_KEY);
+            localStorage.setItem('vault-private-key', STUB_PRIVATE_KEY);
+
+            const publicKey = await crypto.subtle.importKey('jwk', JSON.parse(STUB_PUBLIC_KEY), RSA_CONFIG, true, ['encrypt']);
+
+            const keyChain = new KeychainService();
+            await keyChain.ready();
+
+
+            const encryptedStub = await crypto.subtle.encrypt(RSA_CONFIG, publicKey, textEncoder.encode('Hello, world!'));
+            expect(await keyChain.decrypt(encryptedStub)).to.equal('Hello, world!');
+
+
+        });
+
+        it('throws an error if it cannot decrypt the message', async () => {
+            //localStorage is a singleton, so let's make sure no keys are stored there
+            localStorage.removeItem('vault-public-key');
+            localStorage.removeItem('vault-private-key');
+
+            const publicKey = await crypto.subtle.importKey('jwk', JSON.parse(STUB_PUBLIC_KEY), RSA_CONFIG, true, ['encrypt']);
+
+            // It will generate new keys, but we encrypt using the stub key from the test suite
+            const keyChain = new KeychainService();
+            await keyChain.ready();
+
+            const encryptedStub = await crypto.subtle.encrypt(RSA_CONFIG, publicKey, textEncoder.encode('Hello, world!'));
+
+            try {
+                await keyChain.decrypt(encryptedStub);
+                expect(true).to.equal(false);
+            } catch (e: any) {
+                expect(e.message).to.equal('Unable to decrypt the payload');
+            }
+
+        });
     });
 
 });

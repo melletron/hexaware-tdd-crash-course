@@ -15,12 +15,15 @@ import {localStorage} from "./mocks/local-storage.mock";
 
 // We are going to use a standard RSA-OAEP configuration for our encryption
 // Using the web crypto API (https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
-const RSA_CONFIG: RsaHashedKeyGenParams = {
+export const RSA_CONFIG: RsaHashedKeyGenParams = {
     name: 'RSA-OAEP',
     modulusLength: 1024,
     publicExponent: new Uint8Array([1, 0, 1]),
     hash: 'SHA-256',
 };
+
+// ArrayBuffer to String
+const textDecoder = new TextDecoder();
 
 export class KeychainService {
 
@@ -85,5 +88,13 @@ export class KeychainService {
             };
             _ready();
         });
+    }
+
+    async decrypt(encrypted: ArrayBuffer): Promise<string> {
+        try {
+            return textDecoder.decode(await crypto.subtle.decrypt(RSA_CONFIG, <CryptoKey>this._privateKey, encrypted));
+        } catch (e: any) {
+            throw new Error('Unable to decrypt the payload');
+        }
     }
 }
