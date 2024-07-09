@@ -6,7 +6,7 @@
   "scripts": {
     "prepublish": "npm run build",
     "build": "rimraf ./build && tsc",
-    "test": "mocha -r ts-node/register src/**/*.spec.ts",
+    "test": "mocha -r ts-node/register src/**/*.spec.ts src/*.spec.ts",
     "coverage": "nyc -r text -e .ts -x \"src/**/*.spec.ts\" npm run test"
   },
   "author": "",
