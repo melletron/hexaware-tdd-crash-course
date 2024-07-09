@@ -7,6 +7,8 @@ const sinon = require("sinon");
 
 // String to ArrayBuffer
 const textEncoder = new TextEncoder();
+// ArrayBuffer to String
+const textDecoder = new TextDecoder();
 
 // We are having 2 stub keys as values we can use for our test
 // These are generated manually using the Crypto library
@@ -148,6 +150,27 @@ describe('KeyChain', () => {
             } catch (e: any) {
                 expect(e.message).to.equal('Unable to decrypt the payload');
             }
+
+        });
+    });
+
+    describe('encrypt', () => {
+        it("uses its own public key to encrypt a test", async () => {
+            //localStorage is a singleton, so let's make sure no keys are stored there
+            localStorage.removeItem('vault-public-key');
+            localStorage.removeItem('vault-private-key');
+
+            // We store our stub keys into local storage
+            localStorage.setItem('vault-public-key', STUB_PUBLIC_KEY);
+            localStorage.setItem('vault-private-key', STUB_PRIVATE_KEY);
+
+            const keyChain = new KeychainService();
+            await keyChain.ready();
+
+            const privateKey = await crypto.subtle.importKey('jwk', JSON.parse(STUB_PRIVATE_KEY), RSA_CONFIG, true, ['decrypt']);
+            const encrypted = await keyChain.encrypt('Hello, world!');
+
+            expect(textDecoder.decode(await crypto.subtle.decrypt(RSA_CONFIG, privateKey, encrypted))).to.equal('Hello, world!')
 
         });
     });

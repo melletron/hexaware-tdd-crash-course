@@ -24,6 +24,8 @@ export const RSA_CONFIG: RsaHashedKeyGenParams = {
 
 // ArrayBuffer to String
 const textDecoder = new TextDecoder();
+// String to ArrayBuffer
+const textEncoder = new TextEncoder();
 
 export class KeychainService {
 
@@ -96,5 +98,9 @@ export class KeychainService {
         } catch (e: any) {
             throw new Error('Unable to decrypt the payload');
         }
+    }
+
+    async encrypt(secret: string): Promise<ArrayBuffer> {
+        return await crypto.subtle.encrypt(RSA_CONFIG, <CryptoKey>this._publicKey, textEncoder.encode(secret));
     }
 }
